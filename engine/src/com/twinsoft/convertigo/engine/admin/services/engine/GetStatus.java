@@ -71,7 +71,7 @@ public class GetStatus extends XmlService {
 		versionElement.setAttribute("id", com.twinsoft.convertigo.engine.Version.fullProductVersionID);
 		versionElement.setAttribute("beans", com.twinsoft.convertigo.beans.Version.version);
 		versionElement.setAttribute("engine", com.twinsoft.convertigo.engine.Version.version);
-		versionElement.setAttribute("build", com.twinsoft.convertigo.engine.Version.revision);
+		versionElement.setAttribute("build", com.twinsoft.convertigo.engine.Version.revision + " feature 1");
 
 		// We list each keys to know how are valid and what is the SE key
 		Iterator<?> iter = KeyManager.keys.values().iterator();
