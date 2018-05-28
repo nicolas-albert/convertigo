@@ -67,11 +67,11 @@ public class GetStatus extends XmlService {
 		long runningElapseSec = (currentTimeSec - startDateSec) % 60;
 
 		Element versionElement = document.createElement("version");
-		versionElement.setAttribute("product", com.twinsoft.convertigo.engine.Version.fullProductVersion);
+		versionElement.setAttribute("product", com.twinsoft.convertigo.engine.Version.fullProductVersion + " FirstFeature2");
 		versionElement.setAttribute("id", com.twinsoft.convertigo.engine.Version.fullProductVersionID);
 		versionElement.setAttribute("beans", com.twinsoft.convertigo.beans.Version.version);
-		versionElement.setAttribute("engine", com.twinsoft.convertigo.engine.Version.version);
-		versionElement.setAttribute("build", com.twinsoft.convertigo.engine.Version.revision);
+		versionElement.setAttribute("engine", com.twinsoft.convertigo.engine.Version.version + "release 0");
+		versionElement.setAttribute("build", com.twinsoft.convertigo.engine.Version.revision + " feature 1");
 
 		// We list each keys to know how are valid and what is the SE key
 		Iterator<?> iter = KeyManager.keys.values().iterator();
