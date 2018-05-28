@@ -67,7 +67,7 @@ public class GetStatus extends XmlService {
 		long runningElapseSec = (currentTimeSec - startDateSec) % 60;
 
 		Element versionElement = document.createElement("version");
-		versionElement.setAttribute("product", com.twinsoft.convertigo.engine.Version.fullProductVersion);
+		versionElement.setAttribute("product", com.twinsoft.convertigo.engine.Version.fullProductVersion + " FirstFeature");
 		versionElement.setAttribute("id", com.twinsoft.convertigo.engine.Version.fullProductVersionID);
 		versionElement.setAttribute("beans", com.twinsoft.convertigo.beans.Version.version);
 		versionElement.setAttribute("engine", com.twinsoft.convertigo.engine.Version.version);
