@@ -471,7 +471,7 @@ jobs:
 #        command: aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
         
     - store_artifacts:
-        path: s3
+        path: /home/circleci/s3
         destination: studio
         
 workflows:
