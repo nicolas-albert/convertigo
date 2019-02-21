@@ -114,6 +114,10 @@ jobs:
         name: Clean workspace before saving
         command: rm -rf .git convertigo-doc convertigo-templates gradle-plugin
     
+    - store_artifacts:
+        path: /tmp/build.env
+        destination: env
+    
     - persist_to_workspace:
         root: ..
         paths:
@@ -163,7 +167,7 @@ jobs:
 #          done
           
     - store_artifacts:
-        path: enfine/build/libs
+        path: engine/build/libs
         destination: war
     
   build_docker_amd64:
