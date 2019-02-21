@@ -163,7 +163,7 @@ jobs:
 #          done
           
     - store_artifacts:
-        path: enfine/build/libs/*.war
+        path: enfine/build/libs
         destination: war
     
   build_docker_amd64:
