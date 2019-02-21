@@ -66,37 +66,38 @@ jobs:
         - /tmp/build.env
         key: v1-build-env-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         
-    - add_ssh_keys:
-        fingerprints:
-        - "0f:4a:26:54:4c:1d:13:d5:4a:40:08:b8:35:a7:5d:34"
+#    - add_ssh_keys:
+#        fingerprints:
+#        - "0f:4a:26:54:4c:1d:13:d5:4a:40:08:b8:35:a7:5d:34"
         
-    - run:
-        name: Clone convertigo-doc
-        command: |
-          source /tmp/build.env
-          git clone --depth 1 -b $CIRCLE_BRANCH --single-branch git@github.com:convertigo/convertigo-doc.git || NOCLONE=true
-          if [ "$NOCLONE" = true ]; then
-            git clone --depth 1 -b develop --single-branch git@github.com:convertigo/convertigo-doc.git
-            (cd convertigo-doc && git checkout -b $CIRCLE_BRANCH --track)
-          fi
+#    - run:
+#        name: Clone convertigo-doc
+#        command: |
+#          source /tmp/build.env
+#          git clone --depth 1 -b $CIRCLE_BRANCH --single-branch git@github.com:convertigo/convertigo-doc.git || NOCLONE=true
+#          if [ "$NOCLONE" = true ]; then
+#            git clone --depth 1 -b develop --single-branch git@github.com:convertigo/convertigo-doc.git
+#            (cd convertigo-doc && git checkout -b $CIRCLE_BRANCH --track)
+#          fi
         
     - run:
         name: Build engine.jar and documentation's .md
         command: |
           source /tmp/build.env
           test -d ~/.gradle/caches && find ~/.gradle/caches -name "*-SNAPSHOT" -exec rm -rf {} +
-          sh gradlew --info --stacktrace -PconvertigoRevision=$CONVERTIGO_BUILD_NAME -PdocumentationPath=$PWD/convertigo-doc :engine:generateDocumentationMd :ciFirstStep
+#          sh gradlew --info --stacktrace -PconvertigoRevision=$CONVERTIGO_BUILD_NAME -PdocumentationPath=$PWD/convertigo-doc :engine:generateDocumentationMd :ciFirstStep
+          sh gradlew --info --stacktrace -PconvertigoRevision=$CONVERTIGO_BUILD_NAME :ciFirstStep
         
-    - run:
-        name: Push to convertigo-doc
-        command: |
-          source /tmp/build.env
-          cd convertigo-doc
-          git config --global user.email "info@convertigo.com"
-          git config --global user.name "$CIRCLE_PROJECT_USERNAME"
-          git add .
-          git commit -a -m "Automatic commit from $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME@$CIRCLE_SHA1" || echo "Nothing to commit"
-          git push origin $CIRCLE_BRANCH || echo "Nothing to push"
+#    - run:
+#        name: Push to convertigo-doc
+#        command: |
+#          source /tmp/build.env
+#          cd convertigo-doc
+#          git config --global user.email "info@convertigo.com"
+#          git config --global user.name "$CIRCLE_PROJECT_USERNAME"
+#          git add .
+#          git commit -a -m "Automatic commit from $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME@$CIRCLE_SHA1" || echo "Nothing to commit"
+#          git push origin $CIRCLE_BRANCH || echo "Nothing to push"
           
     - save_cache:
         paths:
@@ -151,16 +152,20 @@ jobs:
         - docker
         key: v1-docker-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         
-    - run:
-        name: Sync WARs to S3
-        command: |
-          source /tmp/build.env
-          mv engine/build/libs/*.war $CONVERTIGO_DIST/
-          aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
-          for folder in $(aws s3 ls s3://convertigo-ci/ | grep convertigo- | head -n -36 | sed "s/ *PRE //"); do
-              aws s3 rm s3://convertigo-ci/${folder} --recursive
-          done
+#    - run:
+#        name: Sync WARs to S3
+#        command: |
+#          source /tmp/build.env
+#          mv engine/build/libs/*.war $CONVERTIGO_DIST/
+#          aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
+#          for folder in $(aws s3 ls s3://convertigo-ci/ | grep convertigo- | head -n -36 | sed "s/ *PRE //"); do
+#              aws s3 rm s3://convertigo-ci/${folder} --recursive
+#          done
           
+    - store_artifacts:
+        path: enfine/build/libs/*.war
+        destination: war
+    
   build_docker_amd64:
     <<: *defaults
     
@@ -238,7 +243,7 @@ jobs:
           docker build --rm=false -t convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE --build-arg TYPE=$TYPE --build-arg CONVERTIGO_WAR_URL=$CONVERTIGO_WAR_URL .
           docker push convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE
           docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE
-          docker push convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE        
+          docker push convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE
           if [ "$CONVERTIGO_BRANCH" = "develop" ]; then
               docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE convertigo/convertigo-ci:$CONVERTIGO_VERSION-$TYPE
               docker push convertigo/convertigo-ci:$CONVERTIGO_VERSION-$TYPE
@@ -457,9 +462,13 @@ jobs:
               wait $job
           done
           
-    - run:
-        name: Sync builds to S3
-        command: aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
+#    - run:
+#        name: Sync builds to S3
+#        command: aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
+        
+    - store_artifacts:
+        path: s3
+        destination: studio
         
 workflows:
   version: 2
@@ -476,18 +485,18 @@ workflows:
     - build_studio:
         requires:
         - build_engine_jar
-    - build_docker_amd64:
-        requires:
-        - build_engine_war
-    - build_docker_i386:
-        requires:
-        - build_engine_war
-    - build_docker_alpine:
-        requires:
-        - build_engine_war
-    - qualif_jmx_1:
-        requires:
-        - build_docker_i386
-    - qualif_jmx_2:
-        requires:
-        - build_docker_alpine
+#    - build_docker_amd64:
+#        requires:
+#        - build_engine_war
+#    - build_docker_i386:
+#        requires:
+#        - build_engine_war
+#    - build_docker_alpine:
+#        requires:
+#        - build_engine_war
+#    - qualif_jmx_1:
+#        requires:
+#        - build_docker_i386
+#    - qualif_jmx_2:
+#        requires:
+#        - build_docker_alpine
