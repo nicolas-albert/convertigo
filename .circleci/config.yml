@@ -60,6 +60,8 @@ jobs:
           export CONVERTIGO_DIST=$(cd ~/s3/convertigo-$CONVERTIGO_BUILD_NAME; pwd)
           env | grep -e "CIRCLE" -e "CONVERTIGO_" | sort > $CONVERTIGO_DIST/env.txt
           env | grep -e "CONVERTIGO_" > /tmp/build.env
+          echo "/tmp/build.env: "
+          cat /tmp/build.env
           
     - save_cache:
         paths:
@@ -156,19 +158,23 @@ jobs:
         - docker
         key: v1-docker-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         
-#    - run:
-#        name: Sync WARs to S3
-#        command: |
+    - run:
+        name: Sync WARs to S3
+        command: |
 #          source /tmp/build.env
-#          mv engine/build/libs/*.war $CONVERTIGO_DIST/
+          mv engine/build/libs/*.war $CONVERTIGO_DIST/
 #          aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
 #          for folder in $(aws s3 ls s3://convertigo-ci/ | grep convertigo- | head -n -36 | sed "s/ *PRE //"); do
 #              aws s3 rm s3://convertigo-ci/${folder} --recursive
 #          done
           
     - store_artifacts:
-        path: engine/build/libs
+        path: /home/circleci/s3
         destination: war
+    - persist_to_workspace:
+        root: /home/circleci/s3
+        paths:
+        - .
     
   build_docker_amd64:
     <<: *defaults
@@ -474,6 +480,18 @@ jobs:
         path: /home/circleci/s3
         destination: studio
         
+  release:
+    docker:
+    - image: cibuilds/github:latest
+    steps:
+    - attach_workspace:
+        at: .
+    - run: |
+        pwd
+        ls -lh
+        VERSION=$CIRCLE_TAG
+        ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /home/circleci/s3
+        
 workflows:
   version: 2
   all:
@@ -483,12 +501,24 @@ workflows:
           branches:
             ignore:
             - 7.5.x
+          tags:
+            only: /^\d+\..*$/
     - build_engine_war:
         requires:
         - build_engine_jar
-    - build_studio:
+#    - build_studio:
+#        requires:
+#        - build_engine_jar
+    - build:
+    - release:
         requires:
-        - build_engine_jar
+        - build_engine_war
+#        - build_studio
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^\d+\..*$/
 #    - build_docker_amd64:
 #        requires:
 #        - build_engine_war
