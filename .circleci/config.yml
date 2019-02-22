@@ -510,7 +510,6 @@ workflows:
 #    - build_studio:
 #        requires:
 #        - build_engine_jar
-    - build:
     - release:
         requires:
         - build_engine_war
