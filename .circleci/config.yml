@@ -22,7 +22,7 @@ jobs:
     - restore_cache:
         keys:
         - v1-git-{{ .Branch }}-{{ .Revision }}
-        - v1-git-
+        - v1-git-{{ .Branch }}
         
     - checkout
     
