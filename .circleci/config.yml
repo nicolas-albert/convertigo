@@ -48,13 +48,18 @@ jobs:
           export CONVERTIGO_VERSION_NUMBER=$(sed -n "s/ext.convertigoVersion = '\(.*\)'/\\1/p" build.gradle)
           export CONVERTIGO_VERSION_TAG=$(sed -n "s/ext.convertigoTag = '\(.*\)'/\\1/p" build.gradle)
           if [ "$CONVERTIGO_VERSION_TAG" = "" ] ; then
-               export CONVERTIGO_VERSION=$CONVERTIGO_VERSION_NUMBER
+              export CONVERTIGO_VERSION=$CONVERTIGO_VERSION_NUMBER
           else
-               export CONVERTIGO_VERSION=$CONVERTIGO_VERSION_NUMBER-$CONVERTIGO_VERSION_TAG
+              export CONVERTIGO_VERSION=$CONVERTIGO_VERSION_NUMBER-$CONVERTIGO_VERSION_TAG
           fi
           export CONVERTIGO_BUILD_NUM=$(printf '%05d' $CIRCLE_BUILD_NUM)
-          export CONVERTIGO_BRANCH=$(echo $CIRCLE_BRANCH | sed "s,/,-,")
-          export CONVERTIGO_BUILD_NAME=$CONVERTIGO_BUILD_NUM-$CONVERTIGO_BRANCH-$CONVERTIGO_VERSION
+          if [ "$CIRCLE_BRANCH" = "" ] ; then
+              export CONVERTIGO_BRANCH=latest
+              export CONVERTIGO_BUILD_NAME=$CONVERTIGO_BUILD_NUM-$CIRCLE_TAG
+          else
+              export CONVERTIGO_BRANCH=$(echo $CIRCLE_BRANCH | sed "s,/,-,")
+              export CONVERTIGO_BUILD_NAME=$CONVERTIGO_BUILD_NUM-$CONVERTIGO_BRANCH-$CONVERTIGO_VERSION
+          fi
           export CONVERTIGO_URL=https://convertigo-ci.s3-eu-west-3.amazonaws.com/convertigo-$CONVERTIGO_BUILD_NAME
           mkdir -p ~/s3/convertigo-$CONVERTIGO_BUILD_NAME
           export CONVERTIGO_DIST=$(cd ~/s3/convertigo-$CONVERTIGO_BUILD_NAME; pwd)
@@ -214,7 +219,7 @@ jobs:
           docker push convertigo/convertigo-ci:$CONVERTIGO_BRANCH
           docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME
           docker push convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME
-          if [ "$CONVERTIGO_BRANCH" = "develop" ]; then
+          if [ "$CONVERTIGO_BRANCH" = "develop" ] || [ "$CONVERTIGO_BRANCH" = "latest" ]; then
               docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH convertigo/convertigo-ci:$CONVERTIGO_VERSION
               docker push convertigo/convertigo-ci:$CONVERTIGO_VERSION
           fi
@@ -256,7 +261,7 @@ jobs:
           docker push convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE
           docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE
           docker push convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE
-          if [ "$CONVERTIGO_BRANCH" = "develop" ]; then
+          if [ "$CONVERTIGO_BRANCH" = "develop" ] || [ "$CONVERTIGO_BRANCH" = "latest" ]; then
               docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE convertigo/convertigo-ci:$CONVERTIGO_VERSION-$TYPE
               docker push convertigo/convertigo-ci:$CONVERTIGO_VERSION-$TYPE
           fi
@@ -298,7 +303,7 @@ jobs:
           docker push convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE
           docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE
           docker push convertigo/convertigo-ci:$CONVERTIGO_BUILD_NAME-$TYPE
-          if [ "$CONVERTIGO_BRANCH" = "develop" ]; then
+          if [ "$CONVERTIGO_BRANCH" = "develop" ] || [ "$CONVERTIGO_BRANCH" = "latest" ]; then
               docker tag convertigo/convertigo-ci:$CONVERTIGO_BRANCH-$TYPE convertigo/convertigo-ci:$CONVERTIGO_VERSION-$TYPE
               docker push convertigo/convertigo-ci:$CONVERTIGO_VERSION-$TYPE
           fi
@@ -508,6 +513,9 @@ workflows:
     - build_engine_war:
         requires:
         - build_engine_jar
+        filters:
+          tags:
+            only: /^\d+\..*$/
 #    - build_studio:
 #        requires:
 #        - build_engine_jar
