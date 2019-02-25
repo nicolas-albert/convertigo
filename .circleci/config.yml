@@ -21,15 +21,15 @@ jobs:
     
     - restore_cache:
         keys:
-        - v1-git-{{ .Branch }}-{{ .Revision }}
-        - v1-git-{{ .Branch }}
+        - v2-git-{{ .Branch }}-{{ .Revision }}
+        - v2-git-{{ .Branch }}
         
     - checkout
     
     - save_cache:
         paths:
         - .git
-        key: v1-git-{{ .Branch }}-{{ .Revision }}
+        key: v2-git-{{ .Branch }}-{{ .Revision }}
         
     - restore_cache:
         keys:
