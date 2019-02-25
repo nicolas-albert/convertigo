@@ -117,7 +117,7 @@ jobs:
         command: rm -rf .git convertigo-doc convertigo-templates gradle-plugin
     
     - store_artifacts:
-        path: /tmp/build.env
+        path: /home/circleci/s3
         destination: env
     
     - persist_to_workspace:
@@ -161,6 +161,7 @@ jobs:
     - run:
         name: Sync WARs to S3
         command: |
+           source /tmp/build.env
            mv engine/build/libs/*.war $CONVERTIGO_DIST/
 #          source /tmp/build.env 
 #          mv engine/build/libs/*.war $CONVERTIGO_DIST/
