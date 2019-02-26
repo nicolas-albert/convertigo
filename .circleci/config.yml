@@ -510,7 +510,8 @@ jobs:
           done
           VERSION=$CIRCLE_TAG
           PRELEASE="-prerelease"
-          if [ "$CONVERTIGO_VERSION_NUMBER" = "$CIRCLE_TAG" ] ; then
+          if [ "$CONVERTIGO_VERSION_NUMBER" = "$VERSION" ] && \
+             [ $(echo $VERSION | sed -r s/\\d+\\.\\d+\\.\\d+/ok/) = "ok" ] ; then
             PRELEASE=""
           fi
           ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME -c $CIRCLE_SHA1 \
