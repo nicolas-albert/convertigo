@@ -90,7 +90,7 @@ jobs:
               (cd convertigo-doc && git checkout -b $CIRCLE_BRANCH --track)
             fi
           else
-            echo "No documenation for tag build"
+            echo "No documentation for tag build"
           fi
         
     - run:
@@ -116,7 +116,7 @@ jobs:
             git commit -a -m "Automatic commit from $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME@$CIRCLE_SHA1" || echo "Nothing to commit"
             git push origin $CIRCLE_BRANCH || echo "Nothing to push"
           else
-            echo "No documenation for tag build"
+            echo "No documentation for tag build"
           fi
           
     - save_cache:
@@ -504,12 +504,17 @@ jobs:
                    "convertigo-studio-$CONVERTIGO_VERSION-win32.exe" \
                    "convertigo-studio-$CONVERTIGO_VERSION-macosx.tar.gz" \
                    "convertigo-studio-$CONVERTIGO_VERSION-linux64.tar.gz" \
-                   "convertigo-linux32-$CONVERTIGO_VERSION-beta.war" \
-                   "convertigo-$CONVERTIGO_VERSION-beta.war"  ; do
-            curl $CONVERTIGO_URL/$f --output dist/$f || true
+                   "convertigo-linux32-$CONVERTIGO_VERSION.war" \
+                   "convertigo-$CONVERTIGO_VERSION.war"  ; do
+            curl -sf $CONVERTIGO_URL/$f --output dist/$f || echo "$f not found"
           done
           VERSION=$CIRCLE_TAG
-          ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} dist
+          PRELEASE="-prerelease"
+          if [ "$CONVERTIGO_VERSION_NUMBER" = "$CIRCLE_TAG" ] ; then
+            PRELEASE=""
+          fi
+          ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME -c $CIRCLE_SHA1 \
+              -draft -delete $PRELEASE $VERSION dist
           
 workflows:
   version: 2
