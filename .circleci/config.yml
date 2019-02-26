@@ -22,7 +22,7 @@ jobs:
     - restore_cache:
         keys:
         - v1-git-{{ .Branch }}-{{ .Environment.CIRCLE_TAG }}-{{ .Revision }}
-        - v1-git-{{ .Branch }}-
+        - v1-git-{{ .Branch }}-{{ .Environment.CIRCLE_TAG }}-
         
     - checkout
     
