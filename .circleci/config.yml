@@ -75,9 +75,9 @@ jobs:
         - /tmp/build.env
         key: v1-build-env-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         
-#    - add_ssh_keys:
-#        fingerprints:
-#        - "0f:4a:26:54:4c:1d:13:d5:4a:40:08:b8:35:a7:5d:34"
+    - add_ssh_keys:
+        fingerprints:
+        - "0f:4a:26:54:4c:1d:13:d5:4a:40:08:b8:35:a7:5d:34"
         
     - run:
         name: Clone convertigo-doc
@@ -182,9 +182,9 @@ jobs:
           source /tmp/build.env 
           mv engine/build/libs/*.war $CONVERTIGO_DIST/
           aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
-          for folder in $(aws s3 ls s3://convertigo-ci/ | grep convertigo- | head -n -36 | sed "s/ *PRE //"); do
-              aws s3 rm s3://convertigo-ci/${folder} --recursive
-          done
+#          for folder in $(aws s3 ls s3://convertigo-ci/ | grep convertigo- | head -n -36 | sed "s/ *PRE //"); do
+#              aws s3 rm s3://convertigo-ci/${folder} --recursive
+#          done
           
   build_docker_amd64:
     <<: *defaults
@@ -486,10 +486,6 @@ jobs:
         name: Sync builds to S3
         command: aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
         
-    - store_artifacts:
-        path: /home/circleci/s3
-        destination: studio
-        
   release:
     docker:
     - image: cibuilds/github:latest
@@ -500,13 +496,21 @@ jobs:
         - v1-build-env-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         
     - run:
-        name: Sync builds to S3
+        name: Sync builds to GitHub
         command: |
           source /tmp/build.env
-          ls -lh
+          mkdir dist
+          for f in "convertigo-studio-$CONVERTIGO_VERSION-win64.exe" \
+                   "convertigo-studio-$CONVERTIGO_VERSION-win32.exe" \
+                   "convertigo-studio-$CONVERTIGO_VERSION-macosx.tar.gz" \
+                   "convertigo-studio-$CONVERTIGO_VERSION-linux64.tar.gz" \
+                   "convertigo-linux32-$CONVERTIGO_VERSION-beta.war" \
+                   "convertigo-$CONVERTIGO_VERSION-beta.war"  ; do
+            curl $CONVERTIGO_URL/$f --output dist/$f || true
+          done
           VERSION=$CIRCLE_TAG
-          ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /home/circleci/s3
-        
+          ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} dist
+          
 workflows:
   version: 2
   all:
@@ -524,13 +528,16 @@ workflows:
         filters:
           tags:
             only: /^\d+\..*$/
-#    - build_studio:
-#        requires:
-#        - build_engine_jar
+    - build_studio:
+        requires:
+        - build_engine_jar
+        filters:
+          tags:
+            only: /^\d+\..*$/
     - release:
         requires:
         - build_engine_war
-#        - build_studio
+        - build_studio
         filters:
           branches:
             ignore: /.*/
