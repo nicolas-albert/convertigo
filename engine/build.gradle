@@ -126,6 +126,8 @@ task dependenciesJar(type: Jar) {
 	exclude 'META-INF/MANIFEST.MF', 'META-INF/INDEX.LIST', 'META-INF/EVIWARE.*', 'META-INF/license.txt'
 	exclude 'META-INF/notice.txt', 'META-INF/README*', 'META-INF/spring*', 'overview.html', 'externs.zip'
 	exclude 'META-INF/mailcap*', 'META-INF/MANIFEST.MF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.SF'
+	exclude 'META-INF/mailcap*', 'META-INF/MANIFEST.MF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.SF'
+	exclude 'org/w3c/**', 'org/xml/sax/**', 'javax/xml/namespace/**', 'javax/xml/xpath/**', 'javax/xml/XMLConstants.class'
 }
 
 tasks['publishToMavenLocal'].dependsOn(dependenciesJar)
@@ -194,7 +196,7 @@ dependencies {
 	compileFlat 'com.convertigo.lib:soapui-xmlbeans:3.5.1'
 	compileFlat 'com.convertigo.lib:soapui:3.5.1'
 	compile     'com.convertigo.provider:convertigo-provider-couchdb:7.7.0-SNAPSHOT'
-	compile     'com.convertigo.provider:convertigo-provider-plugins:7.6.6-SNAPSHOT'
+	compile     'com.convertigo.provider:convertigo-provider-plugins:7.6.6-SNAPSHOT', { exclude module: 'xml-apis'}
 	compile     'com.convertigo.provider:convertigo-provider-sap:7.6.7-SNAPSHOT'
 	compile     'com.convertigo.provider:convertigo-provider-xul:7.6.0-SNAPSHOT'
 	compileFlat 'com.convertigo.twinsoft.lib:aviva:2017.09.04'
@@ -240,7 +242,11 @@ dependencies {
 	compileFlat 'org.apache.ws.commons.axiom:axiom-impl:1.2.13'
 	compileFlat 'org.apache.ws.commons.schema:XmlSchema:[1.4,1.5['
 	compileFlat 'org.apache.xmlbeans:xmlbeans:[2.6,2.7['
-	compileFlat 'org.apache.xmlgraphics:fop:1.0', { exclude module: 'batik-js'}
+	compileFlat 'org.apache.xmlgraphics:fop:1.0', {
+		exclude module: 'xml-apis'
+		exclude module: 'xml-apis-ext'
+		exclude module: 'batik-js'
+	}
 	compileFlat 'org.codehaus.jettison:jettison:[1.4,)'
 	compileFlat 'org.eclipse.jgit:org.eclipse.jgit:[5.4,)'
 	compileFlat 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final'
@@ -249,14 +255,14 @@ dependencies {
 	compileFlat 'org.quartz-scheduler:quartz:[1.7,1.8['
 	compileFlat 'regexp:regexp:1.3'
 	compileFlat 'wsdl4j:wsdl4j:[1.6,1.7['
-	compileFlat 'xalan:xalan:2.7.2'
-	compileFlat 'xerces:xercesImpl:[2.12,)'
+	compileFlat 'xalan:xalan:2.7.2', { exclude module: 'xml-apis'}
+	compileFlat 'xerces:xercesImpl:[2.12,)', { exclude module: 'xml-apis'}
 	compileFlat 'xml-resolver:xml-resolver:1.2'
 	// runtime dependencies from here
 	compileFlat 'com.convertigo.lib:qrcode:2011.05.19'
 	compileFlat 'net.sf.jt400:jt400:[9,)'
 	compileFlat 'net.sourceforge.jtds:jtds:[1.3,)'
-	compileFlat 'org.apache.odftoolkit:simple-odf:0.8.2-incubating'
+	compileFlat 'org.apache.odftoolkit:simple-odf:0.8.2-incubating', { exclude module: 'xml-apis'}
 	compileFlat 'org.hsqldb:hsqldb:1.8.0.10'
 	compileFlat 'org.mariadb.jdbc:mariadb-java-client:2.4.0'
 	compileFlat 'org.postgresql:postgresql:[42,43['
