@@ -90,20 +90,6 @@ jobs:
         - "0f:4a:26:54:4c:1d:13:d5:4a:40:08:b8:35:a7:5d:34"
         
     - run:
-        name: Clone convertigo-doc
-        command: |
-          source /tmp/build.env
-          if [ "$CIRCLE_BRANCH" != "" ] ; then
-          git clone --depth 1 -b $CIRCLE_BRANCH --single-branch git@github.com:convertigo/convertigo-doc.git || NOCLONE=true
-          if [ "$NOCLONE" = true ]; then
-            git clone --depth 1 -b develop --single-branch git@github.com:convertigo/convertigo-doc.git
-            (cd convertigo-doc && git checkout -b $CIRCLE_BRANCH --track)
-          fi
-          else
-            echo "No documentation for tag build"
-          fi
-        
-    - run:
         name: Build engine.jar and documentation's .md
         command: |
           source /tmp/build.env
@@ -111,22 +97,7 @@ jobs:
           if [ "$CIRCLE_BRANCH" == "" ] ; then
             sh gradlew --info --stacktrace $M2_ARGS -PconvertigoRevision=$CONVERTIGO_BUILD_NAME :ciFirstStep
           else
-            sh gradlew --info --stacktrace $M2_ARGS -PconvertigoRevision=$CONVERTIGO_BUILD_NAME -PdocumentationPath=$PWD/convertigo-doc :engine:generateDocumentationMd :ciFirstStep
-          fi
-        
-    - run:
-        name: Push to convertigo-doc
-        command: |
-          source /tmp/build.env
-          if [ "$CIRCLE_BRANCH" != "" ] ; then
-          cd convertigo-doc
-          git config --global user.email "info@convertigo.com"
-          git config --global user.name "$CIRCLE_PROJECT_USERNAME"
-          git add .
-          git commit -a -m "Automatic commit from $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME@$CIRCLE_SHA1" || echo "Nothing to commit"
-          git push origin $CIRCLE_BRANCH || echo "Nothing to push"
-          else
-            echo "No documentation for tag build"
+            sh gradlew --info --stacktrace $M2_ARGS -PconvertigoRevision=$CONVERTIGO_BUILD_NAME :ciFirstStep
           fi
           
     - save_cache:
@@ -441,100 +412,6 @@ jobs:
           - .gradle
         key: v2-dependencies-studio-{{ checksum "build.gradle" }}-{{ checksum ".circleci/config.yml" }}
         
-    - restore_cache:
-        keys:
-        - v1-jre-{{ checksum "installers/nsis/download-jdk.sh" }}
-        
-    - run:
-        name: Download JDKs
-        command: |
-          if [ ! -d /tmp/c8o_jre ] ; then
-              sh installers/nsis/download-jdk.sh
-          fi
-          du -sh /tmp/c8o_jre/*
-          
-    - save_cache:
-        paths:
-        - /tmp/c8o_jre
-        key: v1-jre-{{ checksum "installers/nsis/download-jdk.sh" }}
-        
-    - run:
-        name: Sign exe and make archives
-        command: |
-          source /tmp/build.env
-          openssl enc -aes-256-cbc -d -md md5 -in installers/nsis/convertigo.pfx.aes -out /tmp/convertigo.pfx -k $PFX_AES
-          
-          dir_w64=eclipse-repository/target/products/com.convertigo.studio/win32/win32/x86_64
-          dir_lin=eclipse-repository/target/products/com.convertigo.studio/linux/gtk/x86_64
-          dir_mac=eclipse-repository/target/products/com.convertigo.studio/macosx/cocoa/x86_64
-          
-          if [ -d ${dir_w64} ]; then
-             (mv /tmp/c8o_jre/x64 ${dir_w64}/jre
-              mv ${dir_w64}/ConvertigoStudio.exe /tmp/ConvertigoStudio_x86_64.exe
-              TIMESTAMP=http://timestamp.digicert.com
-              if [ ! $(osslsigncode -pkcs12 /tmp/convertigo.pfx -pass $PFX_PWD -t $TIMESTAMP -in /tmp/ConvertigoStudio_x86_64.exe -out ${dir_w64}/ConvertigoStudio.exe) ]; then
-                TIMESTAMP=http://timestamp.verisign.com/scripts/timstamp.dll
-                if [ ! $(osslsigncode -pkcs12 /tmp/convertigo.pfx -pass $PFX_PWD -t $TIMESTAMP -in /tmp/ConvertigoStudio_x86_64.exe -out ${dir_w64}/ConvertigoStudio.exe) ]; then
-                  TIMESTAMP=http://timestamp.globalsign.com/scripts/timstamp.dll
-                  osslsigncode -pkcs12 /tmp/convertigo.pfx -pass $PFX_PWD -t $TIMESTAMP -in /tmp/ConvertigoStudio_x86_64.exe -out ${dir_w64}/ConvertigoStudio.exe
-                fi
-              fi
-              dir_w64_web=$(dirname ${dir_w64}/plugins/com.twinsoft.convertigo.studio_*/tomcat/webapps/convertigo/WEB-INF/web.xml) 
-              echo "build.version=${convertigoRevision}" > ${dir_w64_web}/build.txt
-              echo "build.date=$(date)" >> ${dir_w64_web}/build.txt
-              echo "build.filename=convertigo-studio-$CONVERTIGO_VERSION-win64.exe" >> ${dir_w64_web}/build.txt
-              makensis -V1 -DConvertigoVersion=$CONVERTIGO_VERSION_NUMBER -DArch=x86_64 -DOutFile=/tmp/convertigo-studio-$CONVERTIGO_VERSION-win64.exe installers/nsis/studio.nsi
-              osslsigncode -pkcs12 /tmp/convertigo.pfx -pass $PFX_PWD -t $TIMESTAMP -in /tmp/convertigo-studio-$CONVERTIGO_VERSION-win64.exe -out $CONVERTIGO_DIST/convertigo-studio-$CONVERTIGO_VERSION-win64.exe) &
-          fi
-          if [ -d ${dir_lin} ]; then
-              dir_lin_web=$(dirname ${dir_lin}/plugins/com.twinsoft.convertigo.studio_*/tomcat/webapps/convertigo/WEB-INF/web.xml) 
-              echo "build.version=${convertigoRevision}" > ${dir_lin_web}/build.txt
-              echo "build.date=$(date)" >> ${dir_lin_web}/build.txt
-              echo "build.filename=convertigo-studio-$CONVERTIGO_VERSION-linux64.tar.gz" >> ${dir_lin_web}/build.txt
-              mv ${dir_lin} convertigo-studio-$CONVERTIGO_VERSION-linux64
-              tar -I "gzip --fast" -cf $CONVERTIGO_DIST/convertigo-studio-$CONVERTIGO_VERSION-linux64.tar.gz convertigo-studio-$CONVERTIGO_VERSION-linux64 &
-          fi
-          if [ -d ${dir_mac} ]; then
-              dir_mac_web=$(dirname ${dir_mac}/ConvertigoStudio.app/Contents/Eclipse/plugins/com.twinsoft.convertigo.studio_*/tomcat/webapps/convertigo/WEB-INF/web.xml) 
-              echo "build.version=${convertigoRevision}" > ${dir_mac_web}/build.txt
-              echo "build.date=$(date)" >> ${dir_mac_web}/build.txt
-              echo "build.filename=convertigo-studio-$CONVERTIGO_VERSION-macosx.tar.gz" >> ${dir_mac_web}/build.txt
-              mv ${dir_mac} convertigo-studio-$CONVERTIGO_VERSION-macosx
-              tar -I "gzip --fast" -cf $CONVERTIGO_DIST/convertigo-studio-$CONVERTIGO_VERSION-macosx.tar.gz convertigo-studio-$CONVERTIGO_VERSION-macosx &
-          fi
-          for job in $(jobs -p); do
-              wait $job
-          done
-        
-    - run:
-        name: Sign Studios with GPG
-        command: |
-          source /tmp/build.env
-          openssl enc -aes-256-cbc -d -md md5 -in installers/convertigo.gpg.aes -out installers/convertigo.gpg -k $PFX_AES
-          mkdir -p ~/.gnupg
-          tar -xvf installers/convertigo.gpg -C ~/.gnupg
-          find $CONVERTIGO_DIST -type f -exec gpg -ab {} \;
-          
-    - run:
-        name: Sync builds to S3
-        command: aws s3 sync --storage-class REDUCED_REDUNDANCY --acl public-read ~/s3 s3://convertigo-ci/
-    - run:
-        name: Remove old Docker images
-        command: |
-          if [ "$CONVERTIGO_DOCKER" = "convertigo/convertigo-ci" ]; then
-            DO="true"
-            while [ $DO = "true" ]; do
-              DO="false"
-              echo "finding images ..."
-              for image in $(curl -s 'https://cloud.docker.com/v2/repositories/convertigo/convertigo-ci/tags/?page_size=25&page=5' | jq -r '.results[].name' || true); do
-                img=$(echo $image)
-                echo "delete $img"
-                curl -s -X DELETE -u $DOCKER_USERNAME:$DOCKER_PASSWORD https://cloud.docker.com/v2/repositories/convertigo/convertigo-ci/tags/$img/
-                DO="true"
-              done
-            done
-          fi
-        
   release:
     docker:
     - image: cibuilds/github:latest
@@ -577,55 +454,9 @@ workflows:
             - 7.5.x
           tags:
             only: /^\d+\..*$/
-    - build_engine_war:
-        requires:
-        - build_engine_jar
-        filters:
-          tags:
-            only: /^\d+\..*$/
     - build_studio:
         requires:
         - build_engine_jar
         filters:
-          tags:
-            only: /^\d+\..*$/
-    - build_docker_default:
-        requires:
-        - build_engine_war
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - build_docker_aks:
-        requires:
-        - build_engine_war
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - qualif_jmx_1:
-        requires:
-        - build_docker_aks
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - qualif_jmx_2:
-        requires:
-        - build_docker_default
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - qualif_jmx_3:
-        requires:
-        - build_docker_default
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - release:
-        requires:
-        - build_docker_default
-        - build_docker_aks
-        - build_studio
-        filters:
-          branches:
-            ignore: /.*/
           tags:
             only: /^\d+\..*$/
