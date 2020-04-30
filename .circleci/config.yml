@@ -292,55 +292,9 @@ workflows:
             - 7.5.x
           tags:
             only: /^\d+\..*$/
-    - build_engine_war:
-        requires:
-        - build_engine_jar
-        filters:
-          tags:
-            only: /^\d+\..*$/
     - build_studio:
         requires:
         - build_engine_jar
         filters:
-          tags:
-            only: /^\d+\..*$/
-    - build_docker_default:
-        requires:
-        - build_engine_war
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - build_docker_aks:
-        requires:
-        - build_engine_war
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - qualif_jmx_1:
-        requires:
-        - build_docker_aks
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - qualif_jmx_2:
-        requires:
-        - build_docker_default
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - qualif_jmx_3:
-        requires:
-        - build_docker_default
-        filters:
-          tags:
-            only: /^\d+\..*$/
-    - release:
-        requires:
-        - build_docker_default
-        - build_docker_aks
-        - build_studio
-        filters:
-          branches:
-            ignore: /.*/
           tags:
             only: /^\d+\..*$/
